@@ -13,6 +13,7 @@ const frontendIndex = path.join(config.frontendDist, 'index.html');
 const frontendBuildAvailable = fs.existsSync(frontendIndex);
 
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.locals.frontendBuildAvailable = frontendBuildAvailable;
 app.locals.frontendIndex = frontendIndex;
 
@@ -27,15 +28,25 @@ function isAllowedOrigin(origin) {
   return false;
 }
 
-app.use(cors({
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      callback(null, true);
-      return;
-    }
+function isSameOrigin(req, origin) {
+  try {
+    return new URL(origin).host === req.get('host');
+  } catch {
+    return false;
+  }
+}
 
-    callback(httpError(403, 'This origin is not allowed by CORS.'));
-  },
+// Only API routes need CORS. Static assets are same-origin and must not be
+// rejected because the browser sends an Origin header for module requests.
+app.use('/api', cors((req, callback) => {
+  const origin = req.get('Origin');
+
+  if (!origin || isAllowedOrigin(origin) || isSameOrigin(req, origin)) {
+    callback(null, { origin: true });
+    return;
+  }
+
+  callback(httpError(403, 'This origin is not allowed by CORS.'));
 }));
 
 app.use(express.json({ limit: '1mb' }));
