@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: crud-studio
+    runtime: node
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_DIST
+        value: ../frontend/dist
+      - key: DATABASE_URL
+        sync: false
